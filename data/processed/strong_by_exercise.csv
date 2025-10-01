@@ -1,0 +1,108 @@
+date,exercise,top_set_kg,sets,reps,volume_kg
+2025-02-10,Basic Scrunches,0.0,3,36,0.0
+2025-02-10,Cable Curl,55.0,3,30,1650.0
+2025-02-10,Face Pull (Cable),30.0,4,40,1000.0
+2025-02-10,Hip Thrust (Barbell),136.0,3,30,4080.0
+2025-02-10,Lat Pulldown (Cable),60.0,3,30,1800.0
+2025-02-10,Oblique Scrunches,0.0,3,30,0.0
+2025-02-10,Pec Deck (Machine),20.0,3,30,600.0
+2025-02-10,Squat (Machine),50.0,3,30,1500.0
+2025-02-10,Stair Master ,0.0,1,10,0.0
+2025-02-10,Triceps Pushdown (Cable - Straight Bar),65.0,3,30,1950.0
+2025-02-13,Basic Scrunches,0.0,3,36,0.0
+2025-02-13,Cable Curl,60.0,3,30,1750.0
+2025-02-13,Hip Thrust (Barbell),146.0,3,30,4180.0
+2025-02-13,Incline Bench Press (Dumbbell),12.5,3,30,375.0
+2025-02-13,Oblique Scrunches,0.0,3,30,0.0
+2025-02-13,Pec Deck (Machine),40.0,3,28,1020.0
+2025-02-13,Running (Treadmill),0.0,1,0,0.0
+2025-02-13,Seated Overhead Press (Dumbbell),12.5,3,30,375.0
+2025-02-13,Seated Row (Cable),60.0,3,30,1800.0
+2025-02-13,Squat (Machine),60.0,3,30,1700.0
+2025-02-13,Triceps Pushdown (Cable - Straight Bar),65.0,3,30,1950.0
+2025-02-24,Basic Scrunches,0.0,3,36,0.0
+2025-02-24,Cable Curl,60.0,3,30,1800.0
+2025-02-24,Face Pull (Cable),35.0,3,30,1050.0
+2025-02-24,Hip Thrust (Barbell),146.0,4,40,5540.0
+2025-02-24,Lat Pulldown (Cable),65.0,3,30,1950.0
+2025-02-24,Oblique Scrunches,0.0,3,30,0.0
+2025-02-24,Squat (Machine),70.0,3,32,2030.0
+2025-02-24,Stair Master ,0.0,1,10,0.0
+2025-02-24,Triceps Pushdown (Cable - Straight Bar),70.0,3,30,2050.0
+2025-03-03,Basic Scrunches,0.0,3,47,0.0
+2025-03-03,Cable Curl,60.0,3,30,1800.0
+2025-03-03,Face Pull (Cable),40.0,3,30,1150.0
+2025-03-03,Hip Thrust (Barbell),156.0,4,30,4280.0
+2025-03-03,Lat Pulldown (Cable),65.0,3,30,1950.0
+2025-03-03,Oblique Scrunches,0.0,3,30,0.0
+2025-03-03,Squat (Machine),70.0,3,30,2100.0
+2025-03-03,Stair Master ,0.0,1,5,0.0
+2025-03-03,Triceps Pushdown (Cable - Straight Bar),70.0,3,30,2100.0
+2025-03-06,Basic Scrunches,0.0,3,45,0.0
+2025-03-06,Cable Curl,65.0,4,32,2080.0
+2025-03-06,Hip Thrust (Barbell),146.0,3,30,3580.0
+2025-03-06,Incline Bench Press (Dumbbell),15.0,3,30,425.0
+2025-03-06,Oblique Scrunches,0.0,3,30,0.0
+2025-03-06,Running (Treadmill),0.0,1,0,0.0
+2025-03-06,Seated Overhead Press (Dumbbell),15.0,3,26,390.0
+2025-03-06,Seated Row (Cable),65.0,6,60,3900.0
+2025-03-06,Triceps Pushdown (Cable - Straight Bar),70.0,3,30,2100.0
+2025-03-17,Basic Scrunches,0.0,3,45,0.0
+2025-03-17,Face Pull (Cable),45.0,3,30,1250.0
+2025-03-17,Hip Thrust (Barbell),146.0,4,40,5490.0
+2025-03-17,Lat Pulldown (Cable),65.0,3,30,1950.0
+2025-03-17,Oblique Scrunches,0.0,3,30,0.0
+2025-03-17,Stair Master ,0.0,1,10,0.0
+2025-03-17,Triceps Pushdown (Cable - Straight Bar),70.0,3,30,2100.0
+2025-03-24,Basic Scrunches,0.0,3,45,0.0
+2025-03-24,Cable Curl,65.0,3,26,1610.0
+2025-03-24,Face Pull (Cable),45.0,3,30,1300.0
+2025-03-24,Lat Pulldown (Cable),65.0,3,30,1850.0
+2025-03-24,Oblique Scrunches,0.0,3,30,0.0
+2025-03-24,Running (Treadmill),0.0,1,0,0.0
+2025-03-24,Squat (Machine),70.0,3,30,2100.0
+2025-03-24,Triceps Pushdown (Cable - Straight Bar),70.0,3,30,2100.0
+2025-04-29,Crunch (Machine),20.0,6,60,1000.0
+2025-04-29,Hip Thrust (Barbell),100.0,6,60,5600.0
+2025-04-29,Lat Pulldown (Cable),60.0,6,60,3600.0
+2025-04-29,Lying Leg Curl (Machine),35.0,6,60,2000.0
+2025-04-29,Pec Deck (Machine),40.0,6,60,2200.0
+2025-04-29,Running (Treadmill),0.0,2,0,0.0
+2025-04-29,Seated Row (Cable),60.0,6,60,3600.0
+2025-05-06,Bicep Curl (Cable),55.0,12,120,6600.0
+2025-05-06,Crunch (Machine),25.0,12,120,2800.0
+2025-05-06,Hip Thrust (Barbell),110.0,16,160,16800.0
+2025-05-06,Squat (Smith Machine),90.0,12,120,10400.0
+2025-05-06,Stair Master ,0.0,4,28,0.0
+2025-05-06,Triceps Pushdown (Cable - Straight Bar),70.0,12,120,8400.0
+2025-07-08,Crunch (Machine),20.0,3,30,550.0
+2025-07-08,Hip Thrust (Barbell),50.0,3,30,1500.0
+2025-07-08,Pec Deck (Machine),25.0,4,40,700.0
+2025-07-08,Running (Treadmill),0.0,1,0,0.0
+2025-07-08,Stair Master ,0.0,1,10,0.0
+2025-07-11,Crunch (Machine),25.0,3,30,750.0
+2025-07-11,Face Pull (Cable),20.0,3,3,55.0
+2025-07-11,Hip Thrust (Barbell),80.0,3,30,2300.0
+2025-07-11,Lying Leg Curl (Machine),30.0,2,20,600.0
+2025-07-11,Pec Deck (Machine),25.0,3,30,750.0
+2025-07-11,Squat (Barbell),70.0,3,30,2000.0
+2025-07-11,Stair Master ,0.0,1,10,0.0
+2025-08-20,Crunch (Machine),35.0,6,60,1900.0
+2025-08-20,Hip Thrust (Barbell),80.0,6,60,4800.0
+2025-08-20,Running (Treadmill),0.0,2,0,0.0
+2025-08-20,Squat (Barbell),90.0,6,60,5400.0
+2025-08-20,Stair Master ,0.0,2,12,0.0
+2025-08-20,Triceps Pushdown (Cable - Straight Bar),70.0,4,40,2800.0
+2025-08-31,Basic Scrunches,0.0,4,39,0.0
+2025-08-31,Face Pull (Cable),30.0,6,60,1600.0
+2025-08-31,Oblique Crunch,0.0,2,10,0.0
+2025-08-31,Squat (Machine),50.0,6,60,3000.0
+2025-08-31,Stair Master ,0.0,4,20,0.0
+2025-08-31,Triceps Pushdown (Cable - Straight Bar),65.0,6,60,3900.0
+2025-09-03,Basic Scrunches,0.0,3,36,0.0
+2025-09-03,Cable Curl,60.0,3,30,1800.0
+2025-09-03,Face Pull (Cable),35.0,3,30,1000.0
+2025-09-03,Hip Thrust (Barbell),96.0,4,40,3340.0
+2025-09-03,Oblique Scrunches,0.0,2,20,0.0
+2025-09-03,Running (Treadmill),0.0,1,0,0.0
+2025-09-03,Squat (Machine),70.0,3,30,1900.0

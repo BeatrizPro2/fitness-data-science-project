@@ -1,0 +1,21 @@
+﻿# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Virtual envs
+.venv*/
+venv/
+env/
+
+# Streamlit local config/cache
+.streamlit/
+
+# Editors / OS
+.vscode/
+.DS_Store
+
+# Personal/raw data (keep samples only)
+data/export.xml
+data/strong.csv
+data/fitdays/**
