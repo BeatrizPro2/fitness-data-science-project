@@ -17,10 +17,6 @@ from fitdays import save_fitdays_images
 # --- Page + streamlit config ---
 st.set_page_config(page_title="Fitness Data Science Dashboard", layout="wide")
 
-
-# --- Page + streamlit config ---
-st.set_page_config(page_title="Fitness Data Science Dashboard", layout="wide")
-
 # --- Project paths & imports ---
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = PROJECT_ROOT / "src"
@@ -256,15 +252,15 @@ with tab1:
     if "weight_lb" in df.columns:
         st.subheader("Weight")
         fig = px.line(df, x="date", y=["weight_lb", "weight_7d_ma"], markers=True)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
         # --- Strong daily totals ---
     if strong_by_day is not None and not strong_by_day.empty:
         st.subheader("Training Volume (kg)")
-        st.plotly_chart(px.bar(strong_by_day, x="date", y="volume_kg"), use_container_width=True)
+        st.plotly_chart(px.bar(strong_by_day, x="date", y="volume_kg"), width='stretch')
 
         if "duration_min" in strong_by_day.columns and strong_by_day["duration_min"].notna().any():
             st.subheader("Workout Duration (min)")
-            st.plotly_chart(px.bar(strong_by_day, x="date", y="duration_min"), use_container_width=True)
+            st.plotly_chart(px.bar(strong_by_day, x="date", y="duration_min"), width='stretch')
 
         # --- Combined: Weight vs Volume (scaled overlay) ---
     if (daily_combined is not None and
@@ -276,7 +272,7 @@ with tab1:
         combo["volume_scaled"] = combo["volume_kg"] / m * combo["weight_lb"].max()
         fig2 = px.line(combo, x="date", y=["weight_lb","volume_scaled"], markers=True)
         fig2.update_layout(legend_title_text="Series (volume scaled)")
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width='stretch')
 
 
 with tab2:
@@ -291,7 +287,7 @@ with tab2:
         st.divider()
         st.subheader("Fitdays screenshots (reference)")
         for img in fitdays_images:
-            st.image(img, use_container_width=True, caption=img.name)
+            st.image(img, width='stretch', caption=img.name)
 
     if "weight_lb" in df.columns:
         delta = latest_change("weight_lb")
@@ -299,15 +295,15 @@ with tab2:
 
     st.divider()
     st.write("Recent rows:")
-    st.dataframe(df.tail(14), use_container_width=True)
+    st.dataframe(df.tail(14), width='stretch')
     # --- Strong PRs & recent exercises ---
     if strong_prs is not None and not strong_prs.empty:
         st.subheader("Top Estimated 1RMs (kg)")
-        st.dataframe(strong_prs.head(20), use_container_width=True)
+        st.dataframe(strong_prs.head(20), width='stretch')
 
     if strong_by_ex is not None and not strong_by_ex.empty:
         st.subheader("Recent Exercises")
-        st.dataframe(strong_by_ex.sort_values("date").tail(30), use_container_width=True)
+        st.dataframe(strong_by_ex.sort_values("date").tail(30), width='stretch')
 
 with tab3:
     st.subheader("Rule-based Suggestions")
