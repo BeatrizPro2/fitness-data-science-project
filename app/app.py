@@ -5,18 +5,17 @@ import streamlit as st
 import tempfile, os, datetime
 import xml.etree.ElementTree as ET
 
-from strong_loader import load_strong_csv
-from fitdays import save_fitdays_images
-
-# --- Project paths & imports ---
+# ---- Make src/ importable BEFORE importing your modules ----
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from strong_loader import load_strong_csv
+from fitdays import save_fitdays_images
+
 # --- Page + streamlit config ---
 st.set_page_config(page_title="Fitness Data Science Dashboard", layout="wide")
-
 # optional trimmer (you added src/health_trim.py)
 try:
     from health_trim import trim_export
