@@ -1,18 +1,13 @@
 """
 Rule-based fitness recommendations.
 
-Generates personalized suggestions based on weight trends and (optionally)
-training volume. Pure logic — no Streamlit dependency, so it stays testable.
+Generates personalized suggestions based on weight trends, training volume,
+and the user's selected goal. Pure logic — no Streamlit dependency.
 """
 from __future__ import annotations
 import pandas as pd
 
-"""
-Rule-based fitness recommendations.
 
-Generates personalized suggestions based on weight trends and (optionally)
-training volume. Pure logic — no Streamlit dependency, so it stays testable.
-"""
 GOAL_LABELS: dict[str, str] = {
     "lose_weight": "Lose Weight",
     "build_muscle": "Build Muscle",
@@ -22,102 +17,95 @@ GOAL_LABELS: dict[str, str] = {
 
 
 def generate_recommendations(
-    df: pd.DataFrame,
-    strong_by_day: pd.DataFrame | None = None,
-) -> list[str]:
+    fitdays_df: pd.DataFrame | None = None,
+    strong: dict | None = None,
+    goal: str | None = None,
+) -> dict[str, list[str]]:
     """
-    Generate rule-based fitness recommendations.
+    Goal-aware, rule-based fitness recommendations.
 
-    Args:
-        df: Daily weight dataframe with 'date' and 'weight_lb' columns.
-        strong_by_day: Optional daily training summary with 'volume_kg' column.
-
-    Returns:
-        List of recommendation strings to display to the user.
+    Returns a dict with two lists:
+        - "strengths": things the user is doing well
+        - "tips":      things to focus on / improve
     """
+    strengths: list[str] = []
     tips: list[str] = []
 
-    # --- Weight trend recommendations ---
-    if "weight_lb" in df.columns and len(df) >= 15:
-        wk_delta = float(df["weight_lb"].iloc[-1] - df["weight_lb"].iloc[-8])
-        if wk_delta > 0.5:
-            tips.append(
-                "Weight trending up ~past week — consider a small calorie deficit "
-                "(−200 to −300 kcal/day) and 1–2 cardio sessions/week."
-            )
-        elif wk_delta < -0.5:
-            tips.append(
-                "Nice downward trend — keep protein ≥1.6 g/kg and continue current training."
-            )
+    by_day = strong.get("by_day") if isinstance(strong, dict) else None
 
-    # --- Training volume recommendations ---
-    if strong_by_day is not None and not strong_by_day.empty and len(strong_by_day) >= 14:
-        recent_vol = strong_by_day["volume_kg"].tail(7).mean()
-        prior_vol = strong_by_day["volume_kg"].iloc[-14:-7].mean()
-        if recent_vol < prior_vol * 0.7:
-            tips.append(
-                "Training volume has dropped notably this past week — consider scheduling "
-                "1–2 makeup sessions or scaling intensity back gradually."
-            )
-        elif recent_vol > prior_vol * 1.5:
-            tips.append(
-                "Training volume jumped a lot recently — watch for fatigue and prioritize "
-                "sleep and recovery this week."
-            )
+    # Weight trend from Fitdays body-comp data (if present)
+    weight_delta = None
+    if fitdays_df is not None and not fitdays_df.empty:
+        wcol = next((c for c in fitdays_df.columns if "weight" in c.lower()), None)
+        if wcol:
+            s = pd.to_numeric(fitdays_df[wcol], errors="coerce").dropna()
+            if len(s) >= 2:
+                weight_delta = float(s.iloc[-1] - s.iloc[0])
 
-    # --- Default ---
+    # Training-volume trend from Strong data (needs ~2 weeks of history)
+    volume_trend = None  # "down", "up", or "steady"
+    if by_day is not None and not by_day.empty and len(by_day) >= 14:
+        recent = by_day["volume_kg"].tail(7).mean()
+        prior = by_day["volume_kg"].iloc[-14:-7].mean()
+        if prior > 0:
+            if recent < prior * 0.7:
+                volume_trend = "down"
+            elif recent > prior * 1.5:
+                volume_trend = "up"
+            else:
+                volume_trend = "steady"
+
+    # Generic strength: logging at all
+    if by_day is not None and not by_day.empty:
+        strengths.append(f"You've logged {len(by_day)} training day(s) — consistency is the foundation.")
+    if volume_trend == "steady":
+        strengths.append("Your training volume has been steady week to week — great consistency.")
+
+    # Goal-specific guidance
+    if goal == "lose_weight":
+        tips.append(
+            "Keep a modest deficit (~-300 to -500 kcal/day), protein >=1.6 g/kg "
+            "to protect muscle, and aim for 7k-10k steps/day."
+        )
+        if weight_delta is not None and weight_delta < -0.5:
+            strengths.append("Your weight is trending down — the deficit is working.")
+        elif weight_delta is not None and weight_delta > 0.5:
+            tips.append("Weight is drifting up — tighten the deficit and add 1-2 cardio sessions.")
+
+    elif goal == "build_muscle":
+        tips.append(
+            "Eat in a slight surplus (~+150 to +300 kcal/day), protein >=1.6 g/kg, "
+            "and add weight or reps to key lifts each week."
+        )
+        if weight_delta is not None and weight_delta > 0:
+            strengths.append("Your weight is trending up — good for supporting muscle gain.")
+        elif weight_delta is not None and weight_delta < 0:
+            tips.append("Weight is flat or dropping — for muscle gain you likely need to eat more.")
+
+    elif goal == "maintain":
+        tips.append(
+            "Keep calories around maintenance and training consistent. "
+            "Small weekly weigh-in swings are normal."
+        )
+        if weight_delta is not None and abs(weight_delta) <= 1.0:
+            strengths.append("Your weight is holding steady — maintenance is on track.")
+
+    elif goal == "improve_endurance":
+        tips.append(
+            "Prioritize 3-4 cardio sessions/week and build duration gradually "
+            "(~10%/week). Keep 1-2 lifting days to retain strength."
+        )
+
+    # Volume-based tips (apply to every goal)
+    if volume_trend == "down":
+        tips.append("Training volume dropped this past week — schedule 1-2 makeup sessions.")
+    elif volume_trend == "up":
+        tips.append("Training volume jumped recently — watch for fatigue and prioritize recovery.")
+
+    # Fallbacks so neither list is ever empty (the app loops over both)
+    if not strengths:
+        strengths.append("Upload more days of data to surface what you're doing well.")
     if not tips:
-        tips.append("Upload more days of data to unlock personalized suggestions.")
+        tips.append("Pick a goal and log more sessions to unlock personalized focus areas.")
 
-    return tips
-
-
-def generate_recommendations(
-    df: pd.DataFrame,
-    strong_by_day: pd.DataFrame | None = None,
-) -> list[str]:
-    """
-    Generate rule-based fitness recommendations.
-
-    Args:
-        df: Daily weight dataframe with 'date' and 'weight_lb' columns.
-        strong_by_day: Optional daily training summary with 'volume_kg' column.
-
-    Returns:
-        List of recommendation strings to display to the user.
-    """
-    tips: list[str] = []
-
-    # --- Weight trend recommendations ---
-    if "weight_lb" in df.columns and len(df) >= 15:
-        wk_delta = float(df["weight_lb"].iloc[-1] - df["weight_lb"].iloc[-8])
-        if wk_delta > 0.5:
-            tips.append(
-                "Weight trending up ~past week — consider a small calorie deficit "
-                "(−200 to −300 kcal/day) and 1–2 cardio sessions/week."
-            )
-        elif wk_delta < -0.5:
-            tips.append(
-                "Nice downward trend — keep protein ≥1.6 g/kg and continue current training."
-            )
-
-    # --- Training volume recommendations ---
-    if strong_by_day is not None and not strong_by_day.empty and len(strong_by_day) >= 14:
-        recent_vol = strong_by_day["volume_kg"].tail(7).mean()
-        prior_vol = strong_by_day["volume_kg"].iloc[-14:-7].mean()
-        if recent_vol < prior_vol * 0.7:
-            tips.append(
-                "Training volume has dropped notably this past week — consider scheduling "
-                "1–2 makeup sessions or scaling intensity back gradually."
-            )
-        elif recent_vol > prior_vol * 1.5:
-            tips.append(
-                "Training volume jumped a lot recently — watch for fatigue and prioritize "
-                "sleep and recovery this week."
-            )
-
-    # --- Default ---
-    if not tips:
-        tips.append("Upload more days of data to unlock personalized suggestions.")
-
-    return tips
+    return {"strengths": strengths, "tips": tips}

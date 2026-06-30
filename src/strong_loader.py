@@ -20,7 +20,7 @@ def load_strong_csv(file_like) -> dict:
       - prs: simple 1RM (Epley) per exercise
     *duration_min included if present.
     """
-    df = pd.read_csv(file_like, on_bad_lines="skip")
+    df = pd.read_csv(file_like, sep=None, engine="python", on_bad_lines="skip")
 
     # Try to find standard columns flexibly
     col_date   = _col(df, "Date", "Workout Date", "Start Time", "day")
