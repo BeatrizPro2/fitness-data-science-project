@@ -134,11 +134,11 @@ with tab_dash:
         if "volume_kg" in by_day.columns and not by_day.empty:
             st.plotly_chart(
                 px.bar(by_day, x="date", y="volume_kg", title="Training volume by day (kg)"),
-                use_container_width=True,
+                width="stretch",
             )
         if prs is not None and not prs.empty:
             st.markdown("**Top estimated 1RMs (kg)**")
-            st.dataframe(prs.head(15), use_container_width=True, hide_index=True)
+            st.dataframe(prs.head(15), width="stretch", hide_index=True)
  
     # ----- Body composition (Fitdays) -----
     if fitdays_df is not None and not fitdays_df.empty:
@@ -159,7 +159,7 @@ with tab_dash:
                 if key in fitdays_df.columns and fitdays_df[key].notna().sum() >= 2:
                     st.plotly_chart(
                         px.line(fitdays_df, x="date", y=key, markers=True, title=label),
-                        use_container_width=True,
+                        width="stretch",
                     )
  
         # Full snapshot table with Fitdays ratings
@@ -172,12 +172,12 @@ with tab_dash:
                              "Rating": std if isinstance(std, str) else ""})
         if rows:
             st.markdown("**Latest Fitdays snapshot**")
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(rows), width="stretch", hide_index=True)
  
         if fitdays_images:
             with st.expander("View uploaded screenshot(s)"):
                 for img in fitdays_images:
-                    st.image(img, caption=getattr(img, "name", ""), use_container_width=True)
+                    st.image(img, caption=getattr(img, "name", ""), width="stretch")
  
 with tab_advice:
     st.subheader(f"Goal: {GOAL_LABELS.get(goal_key, goal_key)}")
