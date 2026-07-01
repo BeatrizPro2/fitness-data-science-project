@@ -137,8 +137,95 @@ with tab_dash:
                 width="stretch",
             )
         if prs is not None and not prs.empty:
-            st.markdown("**Top estimated 1RMs (kg)**")
-            st.dataframe(prs.head(15), width="stretch", hide_index=True)
+            import numpy as np
+
+            CARDIO_KEYWORDS = ["running", "treadmill", "stair", "elliptical",
+                               "cycling", "bike", "rowing", "walk", "jog", "sprint"]
+            MAX_SANE_KG = 500  # heavier than this = a logging typo, ignore it
+
+            def _categorize(name, best_weight):
+                if any(k in str(name).lower() for k in CARDIO_KEYWORDS):
+                    return "Cardio"
+                if pd.isna(best_weight) or best_weight == 0:
+                    return "Bodyweight"
+                return "Weighted"
+
+            # Recompute PRs from raw, filtering out impossible weights first
+            if strong is not None and "raw" in strong and not strong["raw"].empty:
+                raw = strong["raw"]
+                clean = raw[(raw["weight_kg"].isna()) | (raw["weight_kg"] <= MAX_SANE_KG)].copy()
+                clean["est_1rm"] = clean["weight_kg"] * (1 + clean["reps"] / 30.0)
+
+                pr_clean = clean.groupby("exercise").agg(
+                    best_1rm_kg=("est_1rm", "max"),
+                    best_weight_kg=("weight_kg", "max"),
+                    best_reps=("reps", "max"),
+                ).reset_index()
+
+                freq = raw.groupby("exercise").agg(
+                    days_done=("date", "nunique"),
+                    total_sets=("sets", "sum"),
+                    total_reps=("reps", "sum"),
+                ).reset_index()
+
+                exercise_table = pr_clean.merge(freq, on="exercise", how="right")
+            else:
+                exercise_table = prs.copy()
+
+            # Categorize, then blank out 1RM/weight where they're meaningless
+            exercise_table["Type"] = [
+                _categorize(e, w) for e, w in
+                zip(exercise_table["exercise"], exercise_table.get("best_weight_kg", pd.Series()))
+            ]
+            for col in ["best_1rm_kg", "best_weight_kg"]:
+                if col in exercise_table.columns:
+                    exercise_table.loc[exercise_table["Type"] != "Weighted", col] = np.nan
+
+            if "days_done" in exercise_table.columns:
+                exercise_table = exercise_table.sort_values("days_done", ascending=False)
+
+            exercise_table = exercise_table.rename(columns={
+                "exercise": "Exercise",
+                "best_1rm_kg": "Est. 1RM (kg)",
+                "best_weight_kg": "Best weight (kg)",
+                "best_reps": "Best reps",
+                "days_done": "Days done",
+                "total_sets": "Total sets",
+                "total_reps": "Total reps",
+            })
+            # Put Type right after Exercise
+            cols = exercise_table.columns.tolist()
+            if "Type" in cols:
+                cols.insert(1, cols.pop(cols.index("Type")))
+                exercise_table = exercise_table[cols]
+
+            st.caption(f"All {len(exercise_table)} exercises — strength, type, and training frequency.")
+            st.dataframe(exercise_table, width="stretch", hide_index=True)
+            # --- Cardio section ---
+            if strong is not None and "raw" in strong and not strong["raw"].empty:
+                raw = strong["raw"]
+                if "distance_m" in raw.columns or "cardio_min" in raw.columns:
+                    cardio = raw.groupby("exercise").agg(
+                        days=("date", "nunique"),
+                        total_distance_m=("distance_m", "sum"),
+                        total_min=("cardio_min", "sum"),
+                    ).reset_index()
+                    # Keep only rows that actually have cardio data
+                    cardio = cardio[(cardio["total_distance_m"] > 0) | (cardio["total_min"] > 0)]
+    
+                    if not cardio.empty:
+                        cardio["total_km"] = (cardio["total_distance_m"]).round(2)
+                        cardio = cardio.sort_values("total_min", ascending=False)
+                        cardio = cardio[["exercise", "days", "total_km", "total_min"]].rename(columns={
+                            "exercise": "Exercise",
+                            "days": "Days done",
+                            "total_km": "Total distance (km)",
+                            "total_min": "Total time (min)",
+                        })
+                        cardio["Total time (min)"] = cardio["Total time (min)"].round(0)
+                        st.subheader("Cardio")
+                        st.caption("Distance and time for cardio exercises.")
+                        st.dataframe(cardio, width="stretch", hide_index=True)
  
     # ----- Body composition (Fitdays) -----
     if fitdays_df is not None and not fitdays_df.empty:

@@ -33,6 +33,8 @@ def load_strong_csv(file_like) -> dict:
     col_group  = _col(df, "Body Part", "Muscle Group", "Category")
     col_notes  = _col(df, "Notes", "Comment")
     col_dur    = _col(df, "Duration", "Total Time", "Workout Duration (min)")
+    col_dist   = _col(df, "Distance (meters)", "Distance", "Distance (m)", "distance")
+    col_sec    = _col(df, "Seconds", "Time (seconds)", "seconds")
 
     if col_date is None or col_ex is None:
         raise ValueError("Could not find required Strong columns (Date/Exercise).")
@@ -77,6 +79,10 @@ def load_strong_csv(file_like) -> dict:
         out["duration_min"] = np.nan
 
     # ---- Aggregations
+    # Distance & cardio time (for cardio exercises; absent for lifts)
+    out["distance_m"] = pd.to_numeric(out[col_dist], errors="coerce") if col_dist else np.nan
+    _sec = pd.to_numeric(out[col_sec], errors="coerce") if col_sec else np.nan
+    out["cardio_min"] = _sec / 60.0
     # by_day
     by_day = out.groupby("date", as_index=False).agg(
         volume_kg=("volume_kg", "sum"),
