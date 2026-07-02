@@ -268,7 +268,8 @@ with tab_dash:
  
 with tab_advice:
     st.subheader(f"Goal: {GOAL_LABELS.get(goal_key, goal_key)}")
-    rec = generate_recommendations(fitdays_df, strong, goal_key)
+    with st.spinner("» Generating personalized recommendations..."):
+        rec = generate_recommendations(fitdays_df, strong, goal_key)
  
     st.markdown("### What's going well")
     for s in rec["strengths"]:

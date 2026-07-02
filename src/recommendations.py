@@ -1,12 +1,20 @@
 """
-Rule-based fitness recommendations.
+Fitness recommendations.
 
-Generates personalized suggestions based on weight trends, training volume,
-and the user's selected goal. Pure logic — no Streamlit dependency.
+Primary: AI-generated, personalized recommendations via a local Ollama model.
+Fallback: rule-based tips if Ollama is unavailable, so the app never breaks.
 """
 from __future__ import annotations
+import json
 import pandas as pd
 
+try:
+    import requests
+except ImportError:
+    requests = None
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+OLLAMA_MODEL = "qwen2.5:3b"
 
 GOAL_LABELS: dict[str, str] = {
     "lose_weight": "Lose Weight",
@@ -16,96 +24,118 @@ GOAL_LABELS: dict[str, str] = {
 }
 
 
-def generate_recommendations(
-    fitdays_df: pd.DataFrame | None = None,
-    strong: dict | None = None,
-    goal: str | None = None,
-) -> dict[str, list[str]]:
-    """
-    Goal-aware, rule-based fitness recommendations.
-
-    Returns a dict with two lists:
-        - "strengths": things the user is doing well
-        - "tips":      things to focus on / improve
-    """
-    strengths: list[str] = []
-    tips: list[str] = []
+def _build_data_summary(strong: dict | None, fitdays_df: pd.DataFrame | None, goal: str | None) -> str:
+    """Detailed text summary of the user's real data for the model."""
+    lines = [f"User's goal: {GOAL_LABELS.get(goal, goal or 'not set')}"]
 
     by_day = strong.get("by_day") if isinstance(strong, dict) else None
+    if by_day is not None and not by_day.empty:
+        lines.append(f"Total training days logged: {len(by_day)}")
+        if len(by_day) >= 14:
+            recent = by_day["volume_kg"].tail(7).mean()
+            prior = by_day["volume_kg"].iloc[-14:-7].mean()
+            pct = (recent - prior) / prior * 100 if prior else 0
+            lines.append(f"Recent 7-day avg volume: {recent:.0f} kg ({pct:+.0f}% vs prior week)")
 
-    # Weight trend from Fitdays body-comp data (if present)
-    weight_delta = None
+    prs = strong.get("prs") if isinstance(strong, dict) else None
+    if prs is not None and not prs.empty:
+        raw = strong.get("raw")
+        if raw is not None and "exercise" in raw.columns:
+            freq = raw.groupby("exercise")["date"].nunique().sort_values(ascending=False)
+            merged = prs.set_index("exercise")
+            lines.append("Most-trained lifts (exercise: days trained, best weight):")
+            for ex in freq.head(6).index:
+                if ex in merged.index:
+                    w = merged.loc[ex, "best_weight_kg"]
+                    if pd.notna(w) and w > 0:
+                        lines.append(f"  - {ex}: {int(freq[ex])} days, best {w:.0f} kg")
+            rare = freq[freq <= 2]
+            if len(rare):
+                lines.append(f"Rarely trained (<=2 days): {', '.join(rare.head(5).index)}")
+
+    raw = strong.get("raw") if isinstance(strong, dict) else None
+    if raw is not None and "distance_m" in raw.columns:
+        dist = pd.to_numeric(raw["distance_m"], errors="coerce").sum()
+        if dist and dist > 0:
+            lines.append(f"Total cardio distance: {dist:.1f} km")
+
     if fitdays_df is not None and not fitdays_df.empty:
-        wcol = next((c for c in fitdays_df.columns if "weight" in c.lower()), None)
-        if wcol:
-            s = pd.to_numeric(fitdays_df[wcol], errors="coerce").dropna()
-            if len(s) >= 2:
-                weight_delta = float(s.iloc[-1] - s.iloc[0])
+        latest = fitdays_df.iloc[-1]
+        for col, label in [("weight_lb", "weight (lb)"), ("body_fat_pct", "body fat %"),
+                           ("muscle_mass_lb", "muscle mass (lb)")]:
+            if col in fitdays_df.columns and pd.notna(latest.get(col)):
+                lines.append(f"Latest {label}: {latest[col]}")
 
-    # Training-volume trend from Strong data (needs ~2 weeks of history)
-    volume_trend = None  # "down", "up", or "steady"
+    return "\n".join(lines)
+
+
+def generate_ai_recommendations(strong, fitdays_df, goal, user_prefs="", model=OLLAMA_MODEL):
+    if requests is None:
+        raise RuntimeError("requests not installed")
+    summary = _build_data_summary(strong, fitdays_df, goal)
+    prefs_block = f"\nIMPORTANT - user preferences (respect these): {user_prefs}\n" if user_prefs.strip() else ""
+    prompt = (
+        "You are a knowledgeable, encouraging strength coach analyzing a client's real training data. "
+        "Give specific, personalized feedback that cites their actual numbers and exercise names.\n\n"
+        f"{summary}\n"
+        f"{prefs_block}\n"
+        "Rules for your response:\n"
+        "- Recommend MOVEMENT PATTERNS or muscle groups, not specific machines the user may dislike "
+        '(e.g. say "add a hamstring exercise" rather than naming a specific machine).\n'
+        "- Honor the user preferences above when suggesting exercises.\n"
+        "- Reference SPECIFIC exercises and numbers from the data.\n"
+        "- If some muscle groups or lifts are rarely trained, point that out.\n"
+        "- Tie every tip to their goal.\n"
+        "- Avoid generic advice without naming which lift or movement.\n\n"
+        "Respond with a JSON object with exactly two keys:\n"
+        '  "strengths": 5-6 strings on what they are doing well (cite specifics)\n'
+        '  "tips": 5-6 specific, actionable strings (cite specifics, respect preferences)\n'
+        "Each string under 35 words. No medical advice. Return only the JSON."
+    )
+    resp = requests.post(
+        OLLAMA_URL,
+        json={"model": model, "prompt": prompt, "stream": False, "format": "json"},
+        timeout=120,
+    )
+    resp.raise_for_status()
+    data = json.loads(resp.json()["response"])
+    def _to_text(item):
+            # Model sometimes returns {"text": "...", "citations": "..."} instead of a plain string
+            if isinstance(item, dict):
+                txt = item.get("text") or item.get("tip") or item.get("strength") or ""
+                cite = item.get("citations") or item.get("citation") or ""
+                if cite and cite not in ("Not in data", "", "N/A"):
+                    return f"{txt} ({cite})"
+                return txt
+            return str(item)
+
+    strengths = [_to_text(s) for s in data.get("strengths", [])]
+    tips = [_to_text(t) for t in data.get("tips", [])]
+    if not strengths and not tips:
+        raise ValueError("Empty AI response")
+    return {
+        "strengths": strengths or ["Keep logging — more data unlocks better feedback."],
+        "tips": tips or ["Pick a goal to get focused suggestions."],
+    }
+
+
+
+def generate_recommendations(fitdays_df=None, strong=None, goal=None, user_prefs=""):
+    """AI-first; fall back to rule-based tips if Ollama is unavailable."""
+    if requests is not None and isinstance(strong, dict):
+        try:
+            return generate_ai_recommendations(strong, fitdays_df, goal, user_prefs)
+        except Exception:
+            pass
+    return _rule_based(fitdays_df, strong, goal)
+
+
+def _rule_based(fitdays_df=None, strong=None, goal=None):
+    strengths, tips = [], []
+    by_day = strong.get("by_day") if isinstance(strong, dict) else None
+    volume_trend = None
     if by_day is not None and not by_day.empty and len(by_day) >= 14:
         recent = by_day["volume_kg"].tail(7).mean()
         prior = by_day["volume_kg"].iloc[-14:-7].mean()
         if prior > 0:
-            if recent < prior * 0.7:
-                volume_trend = "down"
-            elif recent > prior * 1.5:
-                volume_trend = "up"
-            else:
-                volume_trend = "steady"
-
-    # Generic strength: logging at all
-    if by_day is not None and not by_day.empty:
-        strengths.append(f"You've logged {len(by_day)} training day(s) — consistency is the foundation.")
-    if volume_trend == "steady":
-        strengths.append("Your training volume has been steady week to week — great consistency.")
-
-    # Goal-specific guidance
-    if goal == "lose_weight":
-        tips.append(
-            "Keep a modest deficit (~-300 to -500 kcal/day), protein >=1.6 g/kg "
-            "to protect muscle, and aim for 7k-10k steps/day."
-        )
-        if weight_delta is not None and weight_delta < -0.5:
-            strengths.append("Your weight is trending down — the deficit is working.")
-        elif weight_delta is not None and weight_delta > 0.5:
-            tips.append("Weight is drifting up — tighten the deficit and add 1-2 cardio sessions.")
-
-    elif goal == "build_muscle":
-        tips.append(
-            "Eat in a slight surplus (~+150 to +300 kcal/day), protein >=1.6 g/kg, "
-            "and add weight or reps to key lifts each week."
-        )
-        if weight_delta is not None and weight_delta > 0:
-            strengths.append("Your weight is trending up — good for supporting muscle gain.")
-        elif weight_delta is not None and weight_delta < 0:
-            tips.append("Weight is flat or dropping — for muscle gain you likely need to eat more.")
-
-    elif goal == "maintain":
-        tips.append(
-            "Keep calories around maintenance and training consistent. "
-            "Small weekly weigh-in swings are normal."
-        )
-        if weight_delta is not None and abs(weight_delta) <= 1.0:
-            strengths.append("Your weight is holding steady — maintenance is on track.")
-
-    elif goal == "improve_endurance":
-        tips.append(
-            "Prioritize 3-4 cardio sessions/week and build duration gradually "
-            "(~10%/week). Keep 1-2 lifting days to retain strength."
-        )
-
-    # Volume-based tips (apply to every goal)
-    if volume_trend == "down":
-        tips.append("Training volume dropped this past week — schedule 1-2 makeup sessions.")
-    elif volume_trend == "up":
-        tips.append("Training volume jumped recently — watch for fatigue and prioritize recovery.")
-
-    # Fallbacks so neither list is ever empty (the app loops over both)
-    if not strengths:
-        strengths.append("Upload more days of data to surface what you're doing well.")
-    if not tips:
-        tips.append("Pick a goal and log more sessions to unlock personalized focus areas.")
-
-    return {"strengths": strengths, "tips": tips}
+            volume_trend = "down" if recent < prior*0.7 else "up" if recent > prior*1.5 else "steady"
